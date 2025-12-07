@@ -1,0 +1,255 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+}
+
+.App {
+  padding: 40px 0;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.2);
+}
+
+
+h1 {
+  text-align: center;
+  font-size: 36px;
+  margin-bottom: 5px;
+  color: #4c23af;
+  font-weight: 700;
+}
+
+.subtitle {
+  text-align: center;
+  color: #555;
+  margin-bottom: 30px;
+  font-size: 16px;
+}
+
+/* ================================
+   UPLOAD SECTION
+================================= */
+
+.upload-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+
+.file-input {
+  padding: 10px;
+  border: 2px dashed #6a11cb;
+  border-radius: 8px;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #5b17d2, #8237ff);
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(90, 24, 220, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+.info-box {
+  background: #eef1ff;
+  border-left: 5px solid #5b17d2;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin: 25px 0;
+  font-size: 15px;
+}
+
+.info-box p {
+  margin: 6px 0;
+}
+
+
+.error-box {
+  background: #ffdddd;
+  padding: 12px 18px;
+  border-left: 5px solid red;
+  border-radius: 8px;
+  color: #a10000;
+  margin: 20px 0;
+  font-size: 15px;
+}
+
+
+.search-box {
+  background: linear-gradient(135deg, #dff1ff, #e6f4ff);
+  padding: 20px 25px;
+  border-radius: 15px;
+  margin-top: 25px;
+  border: 1px solid #bcd9f9;
+}
+
+.search-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 15px;
+  border: 2px solid #aad1ff;
+  border-radius: 8px;
+  outline: none;
+}
+
+.btn-secondary {
+  background: #3498db;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.result-item {
+  background: white;
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 4px solid #3498db;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+}
+
+.ai-box {
+  background: linear-gradient(135deg, #f1e6ff, #f7eaff);
+  padding: 20px 25px;
+  margin-top: 25px;
+  border-radius: 15px;
+  border: 1px solid #e3cdff;
+}
+
+.ai-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #d7baff;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.btn-ai {
+  background: #7d3cff;
+  padding: 10px 16px;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.ai-answer {
+  margin-top: 15px;
+  background: #ffffff;
+  padding: 15px;
+  border-left: 4px solid #7d3cff;
+  border-radius: 8px;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.07);
+}
+
+
+.anomaly-box {
+  background: linear-gradient(135deg, #ffe9e9, #ffe0e0);
+  padding: 20px 25px;
+  margin-top: 25px;
+  border-radius: 15px;
+  border: 1px solid #ffc7c7;
+}
+
+.btn-warning {
+  background: #d63031;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.anomaly-results {
+  margin-top: 15px;
+}
+
+.anomaly-item {
+  background: white;
+  padding: 12px 15px;
+  border-left: 5px solid #e74c3c;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.ai-feedback {
+  margin-top: 20px;
+  background: #fff6f6;
+  padding: 15px;
+  border: 1px solid #ffbcbc;
+  border-radius: 8px;
+}
+
+
+.entities-box {
+  background: #f5faff;
+  border: 1px solid #d3e9ff;
+  padding: 20px;
+  border-radius: 15px;
+  margin-top: 25px;
+}
+
+.entity-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.entity-tag {
+  background: #e8f1ff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  border-left: 4px solid #3c72ff;
+}
+
+
+@media (max-width: 600px) {
+  .container {
+    padding: 20px;
+  }
+
+  .search-controls {
+    flex-direction: column;
+  }
+
+  .btn-secondary,
+  .btn-primary,
+  .btn-ai,
+  .btn-warning {
+    width: 100%;
+  }
+}

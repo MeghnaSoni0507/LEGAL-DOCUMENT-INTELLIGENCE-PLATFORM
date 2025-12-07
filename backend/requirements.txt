@@ -1,0 +1,12 @@
+flask
+flask-cors
+PyMuPDF
+pytesseract
+Pillow
+python-dotenv
+spacy
+langchain
+langchain-groq
+langchain-community
+sentence-transformers
+faiss-cpu

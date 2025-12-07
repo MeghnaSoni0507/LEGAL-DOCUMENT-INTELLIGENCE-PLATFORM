@@ -1,0 +1,21 @@
+======================================================================
+DOCUMENT SUMMARY
+======================================================================
+
+1. Sec. 1-1
+   Title: Designation and citation of Code
+   Summary: Sec. 1-1: Specifies how the legal code should be cited in official references.
+----------------------------------------------------------------------
+
+2. Sec. 1-2
+   Title: Definitions and rules of construction
+   Summary: Sec. 1-2: Defines legal terms and standard rules for interpreting the code.
+----------------------------------------------------------------------
+
+3. Sec. 1-3
+   Title: General penalty; continuing violations
+   Summary: Sec. 1-3: Describes penalties or consequences for violating city ordinances.
+----------------------------------------------------------------------
+
+
+Total Sections: 3
