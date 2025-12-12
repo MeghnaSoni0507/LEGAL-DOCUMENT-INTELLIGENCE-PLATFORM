@@ -2,3 +2,8 @@
 venv/
 uploads/
 __pycache__/
+*.bak
+*.bak-*
+docker-compose*.bak
+*.log
+*.sqlite3

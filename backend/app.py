@@ -70,7 +70,7 @@ except Exception as e:
 _key = os.getenv("GROQ_API_KEY")
 print(">>> GROQ_API_KEY present:", bool(_key))
 if _key:
-    print(">>> GROQ_API_KEY present (masked)"))
+    print(">>> GROQ_API_KEY present (masked)")
 
 # ---------------------- optional heavy libs (lazy) ----------------------
 try:
