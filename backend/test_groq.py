@@ -1,15 +1,10 @@
-from dotenv import load_dotenv
+from groq import Groq
 import os
-load_dotenv()
-
-from langchain_groq import ChatGroq
-
-api_key = os.getenv("GROQ_API_KEY")
-print(f"API Key loaded: {api_key[:20]}..." if api_key else "❌ NO API KEY FOUND")
-
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+model = os.getenv("GROQ_MODEL","llama-3.1-8b-instant")
+prompt = "Say hello."
 try:
-    llm = ChatGroq(model="llama3-70b-8192", temperature=0)
-    response = llm.predict("Say hello")
-    print(f"✅ Groq works! Response: {response}")
+    completion = client.chat.completions.create(model=model, messages=[{"role":"user","content":prompt}], temperature=0.0)
+    print("OK:", completion)
 except Exception as e:
-    print(f"❌ Error: {e}")
+    print("Groq call failed:", e)

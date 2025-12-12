@@ -1,170 +1,322 @@
-import React, { useState } from "react";
+// src/App.js
+import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 
-function App() {
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://127.0.0.1:5000";
+const POLL_INTERVAL_MS = 1000; // 1s
+const POLL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+
+export default function App() {
+  // upload / job states
   const [file, setFile] = useState(null);
-  const [extractedData, setExtractedData] = useState(null);
-
-  const [summaries, setSummaries] = useState([]);
-  const [sections, setSections] = useState([]);
-  const [entities, setEntities] = useState([]);
-
-  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [jobId, setJobId] = useState(null);
+  const [statusText, setStatusText] = useState("");
+  const [progress, setProgress] = useState({ processed: 0, total_to_process: 0 });
+  const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
+  // feature states
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState(null);
+  const [anomalyResult, setAnomalyResult] = useState(null);
 
-  const [question, setQuestion] = useState("");
-  const [aiAnswer, setAiAnswer] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
+  // utility
+  const pollTimerRef = useRef(null);
+  const pollStartRef = useRef(null);
 
-  const [anomalies, setAnomalies] = useState([]);
-  const [anomalyFeedback, setAnomalyFeedback] = useState("");
-  const [detecting, setDetecting] = useState(false);
+  useEffect(() => {
+    return () => stopPolling();
+    // eslint-disable-next-line
+  }, []);
 
-  const BACKEND_URL = "http://127.0.0.1:5000";
-
+  function stopPolling() {
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  }
 
   const handleFileChange = (e) => {
-    const selected = e.target.files[0];
-    if (selected && selected.type !== "application/pdf") {
-      setError("Please upload a valid PDF");
+    setError("");
+    setResult(null);
+    setJobId(null);
+    const f = e.target.files && e.target.files[0];
+    if (!f) {
+      setFile(null);
       return;
     }
-    setError("");
-    setFile(selected);
+    if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
+      setError("Please select a PDF file.");
+      setFile(null);
+      return;
+    }
+    setFile(f);
   };
 
   const handleUpload = async () => {
+    setError("");
+    setAiAnswer(null);
+    setAnomalyResult(null);
+    setSearchResults([]);
+    setResult(null);
+
     if (!file) {
-      alert("Please select a PDF first!");
+      setError("Choose a PDF first.");
       return;
     }
 
-    setLoading(true);
-    setError("");
-    const formData = new FormData();
-    formData.append("file", file);
+    setUploading(true);
+    setProcessing(true);
+    setStatusText("Uploading PDF...");
+    setProgress({ processed: 0, total_to_process: 0 });
+    setJobId(null);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/extract`, {
-        method: "POST",
-        body: formData,
-      });
+      const formData = new FormData();
+      formData.append("file", file);
 
-      if (!res.ok) throw new Error("File processing failed");
-
-      const data = await res.json();
-
-      setExtractedData(data);
-      setSummaries(data.summaries || []);
-      setSections(data.sections || []);
-      setEntities(data.entities || []);
-
-      setSearchResults([]);
-      setAiAnswer("");
-      setAnomalies([]);
+      const resp = await fetch(`${BACKEND_URL}/extract`, { method: "POST", body: formData });
+      if (resp.status === 202) {
+        const data = await resp.json();
+        const jid = data.job_id;
+        setJobId(jid);
+        setStatusText("Queued — waiting for worker");
+        pollStartRef.current = Date.now();
+        pollStatus(jid);
+      } else {
+        const text = await resp.text();
+        setError(`Upload failed: ${resp.status} ${resp.statusText} — ${text}`);
+        setProcessing(false);
+      }
     } catch (err) {
-      setError(err.message);
+      setError(`Upload error: ${err.message}`);
+      setProcessing(false);
     } finally {
-      setLoading(false);
+      setUploading(false);
     }
   };
 
+  const pollStatus = async (jid) => {
+    stopPolling();
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return alert("Enter a query");
-    if (!extractedData) return alert("Upload a document first");
-
-    setSearching(true);
-    setError("");
+    const elapsed = Date.now() - (pollStartRef.current || 0);
+    if (elapsed > POLL_TIMEOUT_MS) {
+      setError("Processing timed out. Try a smaller file or increase timeout.");
+      setProcessing(false);
+      return;
+    }
 
     try {
-      const res = await fetch(`${BACKEND_URL}/search`, {
+      const resp = await fetch(`${BACKEND_URL}/status/${jid}`, { method: "GET" });
+      if (resp.status === 404) {
+        setError("Job not found on server.");
+        setProcessing(false);
+        return;
+      }
+      const data = await resp.json();
+
+      if (data.status === "completed" || data.status === "done") {
+        setStatusText("Completed");
+        const res = data.result || {};
+        const normalized = {
+          processed: res.pages_processed ?? data.processed_pages ?? 0,
+          total_to_process: res.pages ?? data.total_pages ?? data.pages_to_process ?? 0,
+        };
+        setProgress(normalized);
+        setResult(res);
+        setProcessing(false);
+        stopPolling();
+        return;
+      }
+
+      if (data.status === "error") {
+        setError(`Processing error: ${data.error || "unknown"}`);
+        setProcessing(false);
+        stopPolling();
+        return;
+      }
+
+      setStatusText(data.status || "processing");
+
+      const norm = {
+        processed:
+          data.processed_pages ??
+          (typeof data.progress === "number" && typeof data.total_pages === "number"
+            ? Math.round((data.progress / 100) * data.total_pages)
+            : data.processed ?? 0),
+        total_to_process: data.total_pages ?? data.pages_to_process ?? 0,
+      };
+      setProgress(norm);
+
+      pollTimerRef.current = setTimeout(() => pollStatus(jid), POLL_INTERVAL_MS);
+    } catch (err) {
+      console.error("Poll error:", err);
+      setStatusText("Waiting to reconnect...");
+      pollTimerRef.current = setTimeout(() => pollStatus(jid), POLL_INTERVAL_MS);
+    }
+  };
+
+  const cancelJob = () => {
+    stopPolling();
+    setProcessing(false);
+    setStatusText("Cancelled");
+    setJobId(null);
+    setProgress({ processed: 0, total_to_process: 0 });
+  };
+
+  // ---------- Search ----------
+  const handleSearch = async (e) => {
+    // important: prevent normal form submit which causes page reload/top scroll
+    if (e && e.preventDefault) e.preventDefault();
+
+    setError("");
+    setSearchResults([]);
+
+    if (!searchQuery.trim()) {
+      setError("Please enter a search query.");
+      return;
+    }
+
+    if (!result || !result.full_cleaned_text) {
+      setError("Extraction not done or no text available.");
+      return;
+    }
+
+    try {
+      console.log("[search] sending", { query: searchQuery });
+      const resp = await fetch(`${BACKEND_URL}/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: searchQuery,
-          text: extractedData.full_cleaned_text,
-        }),
+          full_cleaned_text: result.full_cleaned_text
+        })
       });
 
-      if (!res.ok) throw new Error("Search failed");
+      const text = await resp.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { results: [] }; }
 
-      const data = await res.json();
-      setSearchResults(data.results || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSearching(false);
+      console.log("[search] resp", resp.status, data);
+
+      if (!resp.ok) {
+        setError(data.error || `Search failed: ${resp.status}`);
+        return;
+      }
+
+      // normalize results: accept array of strings or objects
+      const raw = data.results ?? [];
+      const normalized = raw.map((r) => {
+        if (typeof r === "string") return { text: r };
+        if (r && typeof r === "object") return r;
+        return { text: String(r) };
+      });
+
+      setSearchResults(normalized);
+    } catch (e) {
+      console.error("[search] error", e);
+      setError("Search failed: " + e.message);
     }
   };
 
+  // ---------- AI Q&A ----------
+  const handleAskAI = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
 
-  const handleAskAI = async () => {
-    if (!question.trim()) return alert("Enter a question");
-    if (!extractedData) return alert("Upload a document first");
-
-    setAiLoading(true);
+    setAiAnswer(null);
     setError("");
 
+    if (!aiQuestion.trim()) {
+      setError("Please type a question.");
+      return;
+    }
+
+    if (!result || !result.full_cleaned_text) {
+      setError("Extract document first.");
+      return;
+    }
+
     try {
-      const res = await fetch(`${BACKEND_URL}/ask-ai`, {
+      console.log("[ask-ai] question:", aiQuestion);
+      const resp = await fetch(`${BACKEND_URL}/ask-ai`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          question,
-          document_text: extractedData.full_cleaned_text,
-        }),
+          question: aiQuestion,
+          full_cleaned_text: result.full_cleaned_text
+        })
       });
 
-      const data = await res.json();
+      const text = await resp.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { answer: text }; }
 
-      if (!res.ok) throw new Error(data.error || "AI request failed");
+      console.log("[ask-ai] resp", resp.status, data);
 
-      setAiAnswer(data.answer || "No answer returned");
-    } catch (err) {
-      setError(err.message);
-      setAiAnswer("");
-    } finally {
-      setAiLoading(false);
+      if (!resp.ok) {
+        setError(data.error || `AI failed: ${resp.status}`);
+        return;
+      }
+
+      setAiAnswer(data.answer ?? String(data));
+    } catch (e) {
+      console.error("[ask-ai] error", e);
+      setError("AI request failed: " + e.message);
     }
   };
 
-
+  // ---------- Anomaly / Risk ----------
   const handleDetectAnomalies = async () => {
-    if (!extractedData) return alert("Upload a document first");
-
-    setDetecting(true);
+    setAnomalyResult(null);
     setError("");
-    setAnomalies([]);
-    setAnomalyFeedback("");
-
+    if (!result) {
+      setError("Extract a document first.");
+      return;
+    }
     try {
-      const res = await fetch(`${BACKEND_URL}/detect-anomalies`, {
+      const resp = await fetch(`${BACKEND_URL}/detect-anomalies`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          document_text:
-            extractedData.full_cleaned_text || extractedData.full_raw_text,
-        }),
+        body: JSON.stringify({ document_text: result.full_cleaned_text || result.full_raw_text || "" }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || "Anomaly detection failed");
-
-      setAnomalies(data.found_clauses || []);
-      setAnomalyFeedback(data.ai_feedback || "");
+      const data = await resp.json();
+      if (data.error) {
+        setError(data.error);
+        return;
+      }
+      setAnomalyResult(data);
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setDetecting(false);
+      setError("Anomaly detection failed: " + err.message);
     }
   };
 
+  // Render progress bar
+  const renderProgress = () => {
+    const total = progress.total_to_process || progress.total || 0;
+    const done = progress.processed || 0;
+    const pct = total ? Math.round((done / total) * 100) : processing ? 10 : 0;
+    return (
+      <div style={{ marginTop: 18 }}>
+        <div style={{ height: 18, background: "#e6e6e6", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ width: `${pct}%`, height: "100%", background: "#9f7aea", transition: "width 300ms" }} />
+        </div>
+        <div style={{ textAlign: "center", marginTop: 10, color: "#4a5568" }}>
+          {processing ? `Processing PDF... (${done}/${total || "?"}) — ${statusText}` : statusText}
+        </div>
+      </div>
+    );
+  };
+
+  // Helper to display a short meta line
+  const metaLine = (label, value) => (
+    <div style={{ marginBottom: 6 }}>
+      <strong>{label}</strong> {value ?? "(n/a)"}
+    </div>
+  );
 
   return (
     <div className="App">
@@ -172,128 +324,192 @@ function App() {
         <h1>⚖️ Legal Document Intelligence</h1>
         <p className="subtitle">Upload a contract and interact with AI</p>
 
-        {/* Upload */}
-        <div className="upload-section">
-          <input type="file" accept="application/pdf" onChange={handleFileChange} />
-
+        <div className="upload-section" aria-live="polite">
+          <input
+            aria-label="Upload PDF"
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileChange}
+          />
           <button
             className="btn-primary"
-            disabled={loading || !file}
+            disabled={uploading || processing || !file}
             onClick={handleUpload}
+            aria-disabled={uploading || processing || !file}
           >
-            {loading ? "Processing..." : "📤 Extract Document"}
+            {uploading ? "Uploading..." : processing ? "Processing..." : "📤 Extract Document"}
+          </button>
+
+          <button
+            className="btn-secondary"
+            disabled={!processing}
+            onClick={cancelJob}
+            style={{ marginLeft: 12 }}
+          >
+            Cancel
           </button>
         </div>
 
-        {error && <div className="error-box">{error}</div>}
+        {error && <div className="error-box" role="alert" style={{ marginTop: 16 }}>{error}</div>}
 
-        {extractedData && (
-          <>
+        {processing && renderProgress()}
+
+        {/* RESULT / PREVIEW */}
+        {!processing && result && (
+          <div style={{ marginTop: 20 }}>
             <div className="info-box">
-              <p><strong>📄 File:</strong> {extractedData.filename}</p>
-              <p><strong>📃 Pages:</strong> {extractedData.pages}</p>
-              {extractedData.ocr_pages?.length > 0 && (
-                <p><strong>OCR Used On:</strong> {extractedData.ocr_pages.join(", ")}</p>
-              )}
+              {metaLine("File:", result.filename)}
+              {metaLine("Pages:", result.pages)}
+              {result.statistics && metaLine("OCR Used On:", (result.statistics.ocr_pages || []).join(", ") || "None")}
             </div>
 
             {/* Search */}
-            <div className="search-box">
+            <div className="search-box" style={{ marginTop: 10 }}>
               <h3>🔎 Search Document</h3>
-
-              <div className="search-controls">
+              <form onSubmit={handleSearch} style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
                 <input
-                  type="text"
-                  placeholder="Search for terms or clauses..."
+                  className="search-input"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  placeholder="Type keywords or phrases..."
+                  aria-label="Search query"
                 />
-                <button className="btn-secondary" onClick={handleSearch}>
-                  {searching ? "Searching..." : "Search"}
-                </button>
+                <button type="submit" className="btn-secondary" disabled={!searchQuery}>Search</button>
+              </form>
+
+              <div style={{ marginTop: 12 }}>
+                {searchResults.length === 0 && <div style={{ color: "#6b7280" }}>No results yet.</div>}
+                {searchResults.map((r, idx) => (
+                  <div key={idx} className="result-item">
+                    {r.line_number ? <small>Line {r.line_number}</small> : null}
+                    <div style={{ marginTop: 6 }}>{r.text ?? r}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* AI Q&A */}
+            <div className="ai-box" style={{ marginTop: 18 }}>
+              <h3>💬 GenAI Legal Assistant</h3>
+              <form onSubmit={handleAskAI} style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+                <input
+                  className="ai-input"
+                  placeholder="Ask legal questions based on this document..."
+                  value={aiQuestion}
+                  onChange={(e) => setAiQuestion(e.target.value)}
+                  aria-label="AI question"
+                />
+                <button type="submit" className="btn-ai" disabled={!aiQuestion}>Ask AI</button>
+              </form>
+
+              <div style={{ marginTop: 12 }}>
+                {aiAnswer ? (
+                  <div className="ai-answer">{aiAnswer}</div>
+                ) : (
+                  <div style={{ color: "#6b7280" }}>No AI answer yet.</div>
+                )}
+              </div>
+            </div>
+
+            {/* Anomaly / Risk */}
+            <div className="anomaly-box" style={{ marginTop: 18 }}>
+              <h3>⚠️ Anomaly / Risk Detection</h3>
+              <div style={{ marginTop: 8 }}>
+                <button className="btn-warning" onClick={handleDetectAnomalies}>Detect Risks</button>
               </div>
 
-              {searchResults.length > 0 && (
-                <div className="search-results">
-                  {searchResults.map((s, i) => (
-                    <p key={i} className="result-item">{s}</p>
-                  ))}
-                </div>
-              )}
+              <div style={{ marginTop: 12 }}>
+                {anomalyResult ? (
+                  <>
+                    <div style={{ marginBottom: 8 }}><strong>AI Feedback:</strong></div>
+                    <div style={{ background: "#fff", padding: 12, borderRadius: 8 }}>{anomalyResult.ai_feedback || anomalyResult}</div>
+                    <div style={{ marginTop: 12 }}>
+                      <strong>Found Clauses</strong>
+                      {Array.isArray(anomalyResult.found_clauses) && anomalyResult.found_clauses.length > 0 ? (
+                        anomalyResult.found_clauses.map((c, i) => (
+                          <div key={i} className="anomaly-item">
+                            <div><strong>{c.pattern}</strong></div>
+                            <div style={{ marginTop: 6 }}>{c.snippet}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ color: "#6b7280" }}>No risky clauses returned.</div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ color: "#6b7280" }}>No anomaly analysis yet.</div>
+                )}
+              </div>
             </div>
 
-            {/* AI Box */}
-            <div className="ai-box">
-              <h3>💬 GenAI Legal Assistant</h3>
-              <input
-                type="text"
-                placeholder="Ask: What are the termination terms?"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAskAI()}
-              />
-
-              <button className="btn-ai" onClick={handleAskAI}>
-                {aiLoading ? "Thinking..." : "🤖 Ask AI"}
-              </button>
-
-              {aiAnswer && (
-                <div className="ai-answer">
-                  <strong>Answer:</strong>
-                  <p>{aiAnswer}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Anomaly Detection */}
-            <div className="anomaly-box">
-              <h3>⚠️ Anomaly / Risk Detection</h3>
-
-              <button className="btn-warning" onClick={handleDetectAnomalies}>
-                {detecting ? "Scanning..." : "🕵️ Detect Risks"}
-              </button>
-
-              {anomalies.length > 0 && (
-                <div className="anomaly-results">
-                  {anomalies.map((a, i) => (
-                    <div className="anomaly-item" key={i}>
-                      <strong>{a.pattern.toUpperCase()}</strong>
-                      <p>{a.snippet}</p>
+            {/* Sections / Summaries / Entities */}
+            <div style={{ marginTop: 18 }}>
+              <div className="entities-box">
+                <h4>🔖 Sections</h4>
+                {Array.isArray(result.sections) && result.sections.length > 0 ? (
+                  result.sections.map((s, i) => (
+                    <div key={i} style={{ marginBottom: 10, background: "#fff", padding: 10, borderRadius: 8 }}>
+                      <strong>{s.title}</strong>
+                      <div style={{ marginTop: 6, color: "#4a5568" }}>{s.snippet}</div>
                     </div>
-                  ))}
+                  ))
+                ) : (
+                  <div style={{ color: "#6b7280" }}>No sections extracted.</div>
+                )}
 
-                  {anomalyFeedback && (
-                    <div className="ai-feedback">
-                      <h4>AI Summary:</h4>
-                      <p>{anomalyFeedback}</p>
-                    </div>
+                <h4 style={{ marginTop: 12 }}>📝 Summaries</h4>
+                {Array.isArray(result.summaries) && result.summaries.length > 0 ? (
+                  result.summaries.map((s, i) => (
+                    <div key={i} className="result-item">{s}</div>
+                  ))
+                ) : (
+                  <div style={{ color: "#6b7280" }}>No summaries available.</div>
+                )}
+
+                <h4 style={{ marginTop: 12 }}>📚 Entities</h4>
+                <div className="entity-list" style={{ marginTop: 8 }}>
+                  {Array.isArray(result.entities) && result.entities.length > 0 ? (
+                    result.entities.slice(0, 50).map((e, i) => (
+                      <div key={i} className="entity-tag">{e.text} <small style={{ marginLeft: 6, color: "#6b7280" }}>[{e.label}]</small></div>
+                    ))
+                  ) : (
+                    <div style={{ color: "#6b7280" }}>No entities found.</div>
                   )}
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Entities */}
-            <div className="entities-box">
-              <h3>🧩 Extracted Entities</h3>
-
-              {entities.length > 0 ? (
-                <div className="entity-list">
-                  {entities.map((ent, i) => (
-                    <span key={i} className="entity-tag">
-                      {ent.text} <em>({ent.label})</em>
-                    </span>
-                  ))}
+            {/* Preview text and pages */}
+            <div style={{ marginTop: 18 }}>
+              <h4>Preview (first 3 processed pages)</h4>
+              {Array.isArray(result.pages_data) && result.pages_data.slice(0, 3).map((p, idx) => (
+                <div key={idx} style={{ background: "#fff", padding: 12, marginBottom: 8, borderRadius: 6, border: "1px solid #eee" }}>
+                  <div style={{ fontSize: 13, marginBottom: 6 }}>
+                    <strong>Page {p.page_number}</strong> • method: {p.method} • chars: {p.char_count}
+                  </div>
+                  <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{p.text || "(no text captured)"}</pre>
                 </div>
-              ) : (
-                <p>No entities found</p>
-              )}
+              ))}
+              {!Array.isArray(result.pages_data) && <div style={{ color: "#666" }}>No page previews available.</div>}
             </div>
-          </>
+
+            <div style={{ marginTop: 16 }}>
+              <h4>Full Cleaned Text</h4>
+              <pre style={{ maxHeight: 360, overflow: "auto", whiteSpace: "pre-wrap", background: "#fafafa", padding: 12, borderRadius: 6 }}>
+                {result.full_cleaned_text || "(empty)"}
+              </pre>
+            </div>
+          </div>
+        )}
+
+        {/* No result yet */}
+        {!processing && !result && (
+          <div style={{ marginTop: 24, color: "#718096" }}>
+            Choose a PDF and click <strong>Extract Document</strong>. The UI will upload, poll server status and show extracted text + tools here.
+          </div>
         )}
       </div>
     </div>
   );
 }
-
-export default App;

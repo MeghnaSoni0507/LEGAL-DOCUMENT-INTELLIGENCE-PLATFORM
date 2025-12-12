@@ -1,0 +1,27 @@
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smart_backend
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    environment:
+      - PORT=8000
+
+  webapp:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile
+      args:
+        # Build-time env to embed the public API base your frontend will call from user's browser.
+        # If you proxy via nginx, set this to "" and enable proxy_pass in nginx.conf.
+        REACT_APP_API_BASE: "http://localhost:8000"
+    container_name: smart_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
