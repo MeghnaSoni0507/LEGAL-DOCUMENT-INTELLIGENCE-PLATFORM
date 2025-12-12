@@ -1,4 +1,4 @@
-﻿@"
+﻿$yaml = @'
 services:
   - type: web
     name: ldip-frontend
@@ -22,4 +22,6 @@ databases:
   - name: ldip-db
     engine: postgresql
     plan: free
-"@ | Out-File -FilePath render.yaml -Encoding utf8
+'@
+
+Set-Content -Path render.yaml -Value $yaml -Encoding utf8
