@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test script to verify backend endpoints are working
 Run this to test your backend without the frontend
 """
@@ -10,19 +10,19 @@ BACKEND_URL = "http://127.0.0.1:5000"
 
 def test_home():
     """Test if backend is running"""
-    print("\n🧪 Testing Home Endpoint...")
+    print("\nðŸ§ª Testing Home Endpoint...")
     try:
         response = requests.get(f"{BACKEND_URL}/")
-        print(f"✅ Status: {response.status_code}")
+        print(f"âœ… Status: {response.status_code}")
         print(f"Response: {response.json()}")
         return True
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"âŒ Error: {e}")
         return False
 
 def test_ask_ai():
     """Test AI Q&A endpoint"""
-    print("\n🧪 Testing Ask AI Endpoint...")
+    print("\nðŸ§ª Testing Ask AI Endpoint...")
     
     test_data = {
         "question": "What is this document about?",
@@ -39,19 +39,19 @@ def test_ask_ai():
         
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Answer: {data.get('answer', 'No answer')}")
+            print(f"âœ… Answer: {data.get('answer', 'No answer')}")
             return True
         else:
-            print(f"❌ Error: {response.json()}")
+            print(f"âŒ Error: {response.json()}")
             return False
             
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"âŒ Error: {e}")
         return False
 
 def test_detect_anomalies():
     """Test anomaly detection endpoint"""
-    print("\n🧪 Testing Detect Anomalies Endpoint...")
+    print("\nðŸ§ª Testing Detect Anomalies Endpoint...")
     
     test_data = {
         "document_text": "This contract includes a termination clause. The penalty for breach is $10000. There is a confidentiality agreement that must be maintained."
@@ -67,20 +67,20 @@ def test_detect_anomalies():
         
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Found {len(data.get('found_clauses', []))} risky clauses")
+            print(f"âœ… Found {len(data.get('found_clauses', []))} risky clauses")
             print(f"AI Feedback: {data.get('ai_feedback', 'No feedback')[:100]}...")
             return True
         else:
-            print(f"❌ Error: {response.json()}")
+            print(f"âŒ Error: {response.json()}")
             return False
             
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"âŒ Error: {e}")
         return False
 
 def check_env():
     """Check if environment is configured"""
-    print("\n🧪 Checking Environment Configuration...")
+    print("\nðŸ§ª Checking Environment Configuration...")
     import os
     from dotenv import load_dotenv
     
@@ -88,16 +88,16 @@ def check_env():
     
     api_key = os.environ.get("OPENAI_API_KEY")
     if api_key:
-        print(f"✅ OpenAI API Key found: {api_key[:20]}...")
+        print("✅ OpenAI API Key found (masked)")
         return True
     else:
-        print("❌ OpenAI API Key NOT found in .env file")
+        print("âŒ OpenAI API Key NOT found in .env file")
         print("   Please create a .env file with: OPENAI_API_KEY=sk-proj-xxxxx")
         return False
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🚀 Legal Document Intelligence - Backend Test Suite")
+    print("ðŸš€ Legal Document Intelligence - Backend Test Suite")
     print("=" * 60)
     
     # Check environment first
@@ -107,24 +107,24 @@ if __name__ == "__main__":
     home_ok = test_home()
     
     if home_ok and env_ok:
-        print("\n⏳ Testing AI features (this may take a few seconds)...")
+        print("\nâ³ Testing AI features (this may take a few seconds)...")
         ai_ok = test_ask_ai()
         anomaly_ok = test_detect_anomalies()
         
         print("\n" + "=" * 60)
-        print("📊 Test Results Summary:")
+        print("ðŸ“Š Test Results Summary:")
         print("=" * 60)
-        print(f"Backend Running: {'✅' if home_ok else '❌'}")
-        print(f"Environment Config: {'✅' if env_ok else '❌'}")
-        print(f"Ask AI: {'✅' if ai_ok else '❌'}")
-        print(f"Detect Anomalies: {'✅' if anomaly_ok else '❌'}")
+        print(f"Backend Running: {'âœ…' if home_ok else 'âŒ'}")
+        print(f"Environment Config: {'âœ…' if env_ok else 'âŒ'}")
+        print(f"Ask AI: {'âœ…' if ai_ok else 'âŒ'}")
+        print(f"Detect Anomalies: {'âœ…' if anomaly_ok else 'âŒ'}")
         print("=" * 60)
         
         if all([home_ok, env_ok, ai_ok, anomaly_ok]):
-            print("\n🎉 All tests passed! Your backend is working correctly.")
+            print("\nðŸŽ‰ All tests passed! Your backend is working correctly.")
         else:
-            print("\n⚠️ Some tests failed. Check the errors above.")
+            print("\nâš ï¸ Some tests failed. Check the errors above.")
     else:
-        print("\n⚠️ Backend is not running or environment is not configured.")
+        print("\nâš ï¸ Backend is not running or environment is not configured.")
         print("   1. Make sure backend is running: python app.py")
         print("   2. Make sure .env file exists with OPENAI_API_KEY")

@@ -1,4 +1,4 @@
-# app.py (RAG-enabled, improved) - cleaned & debugged (fixed)
+﻿# app.py (RAG-enabled, improved) - cleaned & debugged (fixed)
 import os
 import io
 import re
@@ -44,7 +44,7 @@ else:
 # Standard load
 load_dotenv(dotenv_path=DOTENV_PATH, override=True)
 
-# Robust parse + injection — fixes BOM or invisible prefixes in keys
+# Robust parse + injection â€” fixes BOM or invisible prefixes in keys
 try:
     parsed = dotenv_values(DOTENV_PATH) if p.exists() else {}
     fixed_keys = []
@@ -70,7 +70,7 @@ except Exception as e:
 _key = os.getenv("GROQ_API_KEY")
 print(">>> GROQ_API_KEY present:", bool(_key))
 if _key:
-    print(">>> GROQ_API_KEY preview:", (_key[:8] + "..." + _key[-4:]) if len(_key) > 12 else ("(short)"))
+    print(">>> GROQ_API_KEY present (masked)"))
 
 # ---------------------- optional heavy libs (lazy) ----------------------
 try:
@@ -83,7 +83,7 @@ logger = logging.getLogger("legal-ai-backend")
 
 # ---------------- Config ----------------
 class Config:
-    # FIXED: add MAX_FILE_SIZE (was missing) — default 50MB
+    # FIXED: add MAX_FILE_SIZE (was missing) â€” default 50MB
     MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", 50 * 1024 * 1024))
 
     UPLOAD_FOLDER = "uploads"
@@ -120,9 +120,9 @@ try:
     from utils.section_extractor import extract_legal_sections
     from utils.summarizer import summarize_entire_document
     from search_engine import keyword_search
-    logger.info("✅ Loaded local utils")
+    logger.info("âœ… Loaded local utils")
 except Exception:
-    logger.info("⚠️ Local utils not found, using internal fallbacks")
+    logger.info("âš ï¸ Local utils not found, using internal fallbacks")
 
     def clean_text_fn(text: str) -> str:
         if not text:
@@ -166,10 +166,10 @@ except Exception:
 try:
     import spacy
     nlp = spacy.load("en_core_web_sm")
-    logger.info("✅ spaCy loaded")
+    logger.info("âœ… spaCy loaded")
 except Exception:
     nlp = None
-    logger.info("⚠️ spaCy not available")
+    logger.info("âš ï¸ spaCy not available")
 
 # ---------------- tesseract detection (improved) ----------------
 def detect_tesseract(explicit_path=None):
@@ -192,7 +192,7 @@ def detect_tesseract(explicit_path=None):
             # try to run the candidate; some candidates might be full paths or just commands
             out = subprocess.run([p, "-v"], capture_output=True, text=True, check=True, timeout=5)
             first_line = out.stdout.splitlines()[0] if out.stdout else (out.stderr.splitlines()[0] if out.stderr else p)
-            logger.info("✅ Tesseract found (candidate): %s", first_line)
+            logger.info("âœ… Tesseract found (candidate): %s", first_line)
             return p
         except Exception:
             logger.debug("Tesseract candidate failed: %s", p)
@@ -200,7 +200,7 @@ def detect_tesseract(explicit_path=None):
     # try generic 'tesseract' on PATH as last resort
     try:
         out = subprocess.run(["tesseract", "-v"], capture_output=True, text=True, check=True, timeout=5)
-        logger.info("✅ Tesseract available via PATH: %s", out.stdout.splitlines()[0] if out.stdout else "tesseract")
+        logger.info("âœ… Tesseract available via PATH: %s", out.stdout.splitlines()[0] if out.stdout else "tesseract")
         return shutil.which("tesseract") or "tesseract"
     except Exception:
         logger.warning("Tesseract not detected on system PATH")
@@ -769,3 +769,4 @@ if __name__ == "__main__":
     logger.info(f"Tesseract: {tesseract_available} (cmd={pytesseract.pytesseract.tesseract_cmd if tesseract_available else None})")
     logger.info(f"Max workers: {Config.MAX_WORKERS}")
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8000)), debug=False)
+
