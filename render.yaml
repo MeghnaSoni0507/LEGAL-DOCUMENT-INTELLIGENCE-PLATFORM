@@ -1,0 +1,25 @@
+﻿services:
+  - type: static
+    name: ldip-frontend
+    env: static
+    region: oregon
+    branch: main
+    root: frontend
+    buildCommand: npm ci && npm run build
+    publishPath: build
+    autoDeploy: true
+
+  - type: web
+    name: ldip-backend
+    env: docker
+    region: oregon
+    branch: main
+    root: backend
+    dockerfilePath: Dockerfile
+    autoDeploy: true
+    instanceType: free
+
+databases:
+  - name: ldip-db
+    engine: postgresql
+    plan: free
