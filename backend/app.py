@@ -450,7 +450,11 @@ def process_pdf_job(job_id, file_path):
 # ---------------- Create Flask app and routes ----------------
 app = Flask(__name__)
 # allow local dev origins commonly used
-CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "http://localhost", "http://127.0.0.1"]}})
+CORS(
+    app,
+    resources={r"/*": {"origins": "*"}},
+    supports_credentials=True
+)
 
 @app.route("/", methods=["GET"])
 def index():
