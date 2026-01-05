@@ -16,7 +16,7 @@ def clean_ocr_text(text):
     
     # Fix common OCR errors
     text = text.replace('|', 'I')  # Vertical bars often misread
-    text = text.replace('0', 'O').replace('O', '0')  # Context-dependent
+    
     
     # Remove page markers if present
     text = re.sub(r'\[Page \d+\]\s*', '', text)
