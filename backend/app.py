@@ -709,6 +709,20 @@ Answer concisely (one paragraph) and reference context lines if possible."""
     except Exception:
         logger.exception("ask-ai unexpected error")
         return jsonify({"error": "Internal server error"}), 500
+    
+def extract_sentence_snippet(text, idx, window=300):
+    """
+    Extract a sentence-level snippet around a keyword index
+    to avoid cutting words mid-sentence.
+    """
+    start = text.rfind('.', 0, idx)
+    start = start + 1 if start != -1 else max(0, idx - window)
+
+    end = text.find('.', idx)
+    end = end + 1 if end != -1 else min(len(text), idx + window)
+
+    snippet = text[start:end].strip()
+    return snippet   
 
 @app.route("/detect-anomalies", methods=["POST"])
 def detect_anomalies():
@@ -734,8 +748,11 @@ def detect_anomalies():
         for ptn in patterns:
             idx = lowered.find(ptn)
             if idx != -1:
-                snippet = text[max(0, idx-120):idx+200]
-                found.append({"pattern": ptn, "snippet": snippet})
+                snippet = extract_sentence_snippet(text, idx)
+            found.append({
+                "pattern": ptn,
+                "snippet": snippet
+            })
         if not found:
             return jsonify({"found_clauses": [], "ai_feedback": "No risky clauses found."})
         return jsonify({"found_clauses": found, "ai_feedback": "Pattern-based detection returned. Set GROQ_API_KEY for AI summarization."})
