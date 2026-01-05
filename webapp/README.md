@@ -1,70 +1,226 @@
-# Getting Started with Create React App
+# ⚖️ Legal Document Intelligence Platform
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+An **end‑to‑end AI-powered system** to upload legal documents (PDFs), extract and clean text, identify legal sections, perform advanced keyword search, enable **grounded GenAI Q&A**, and detect **risky / anomalous clauses**.
 
-## Available Scripts
+This project is **engineered-first**, not chatbot-first. AI is used **only after** deterministic processing to ensure reliability, explainability, and reduced hallucinations.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 🚀 Why This Project Matters
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Legal documents are long, noisy (OCR), and highly structured. Generic chatbots struggle with:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+* Hallucinations
+* Lack of clause references
+* No explainability
+* No enterprise workflow
 
-### `npm test`
+This platform solves that by combining:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+* OCR-aware text cleaning
+* Regex-based legal structure extraction
+* Contextual keyword search
+* Responsible RAG-style GenAI usage
+* Risk / anomaly detection
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🧠 High-Level Architecture
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```
+PDF Upload (React)
+   ↓
+Flask Backend APIs
+   ↓
+OCR / Text Extraction
+   ↓
+Text Cleaning & Normalization
+   ↓
+Legal Section / Clause Extraction
+   ↓
+Keyword & Structured Search
+   ↓
+GenAI Q&A (Grounded)
+   ↓
+Risk / Anomaly Detection
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## ✨ Key Features
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 📄 Document Ingestion
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+* Upload PDF contracts
+* OCR support for scanned pages
+* Background processing with job IDs
+* Progress tracking via polling
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### 🧹 OCR Text Cleaning
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+* Removes OCR noise (extra spaces, broken lines)
+* Fixes common OCR errors (e.g. `|` → `I`)
+* Removes page markers
+* Produces clean, NLP-ready text
 
-## Learn More
+### 🧩 Legal Section Extraction
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+* Regex-based detection of:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+  * Articles (Roman / numeric)
+  * Sections (1, 2.3, etc.)
+  * Clauses
+  * Numbered headings
+* Extracts:
 
-### Code Splitting
+  * Section number
+  * Title
+  * Content preview
+  * Line number
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### 🔎 Advanced Keyword Search
 
-### Analyzing the Bundle Size
+* Context-aware search (±60 chars)
+* Case-insensitive, regex-safe
+* De-duplicated snippets
+* Section-aware results (where applicable)
+* Occurrence counting
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### 💬 GenAI Legal Assistant
 
-### Making a Progressive Web App
+* Ask questions **only after** extraction
+* Uses cleaned text as grounding context
+* Deterministic behavior for system prompts
+* Designed to reduce hallucinations
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### ⚠️ Risk / Anomaly Detection
 
-### Advanced Configuration
+* Detects potentially risky clauses
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+  * Penalty
+  * Termination
+  * Indemnity (extensible)
+* Returns:
 
-### Deployment
+  * AI feedback
+  * Clause snippets
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### 📊 Transparent Outputs
 
-### `npm run build` fails to minify
+* Page-wise previews
+* Full cleaned document text
+* Extracted entities
+* Basic summaries & metadata
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+
+## 🖥️ Frontend (React)
+
+* Single-page application
+* State-driven UI (React Hooks)
+* Async job orchestration (polling)
+* Environment-based backend config
+* Features:
+
+  * Upload & progress tracking
+  * Search
+  * GenAI Q&A
+  * Risk detection
+  * Section & entity display
+
+---
+
+## ⚙️ Backend (Flask / Python)
+
+### Core Modules
+
+* `text_cleaner.py` – OCR text normalization
+* `section_extractor.py` – Legal clause extraction
+* `search.py` – Keyword & advanced search
+* `summarizer.py` – Deterministic summaries
+* `anomaly_detection.py` – Risk analysis
+
+### Design Principles
+
+* Separation of concerns
+* Defensive input handling
+* Regex before AI
+* Explainable outputs
+* Testable pipeline
+
+---
+
+## 🧪 Testing & Validation
+
+* Standalone test harness for:
+
+  * OCR cleaning
+  * Section extraction
+* Sample OCR text input
+* Debug-friendly logging
+* Optional output persistence
+
+---
+
+## 🔐 Security & Reliability
+
+* API keys via environment variables
+* No hardcoded secrets
+* Regex-escaped user queries
+* Deterministic AI temperature for system calls
+
+---
+
+## 🧰 Tech Stack
+
+**Frontend**
+
+* React
+* HTML / CSS
+* Fetch API
+
+**Backend**
+
+* Python
+* Flask
+* Regex / NLP preprocessing
+
+**AI / GenAI**
+
+* Groq API (LLM)
+* Prompt grounding with document context
+
+**Others**
+
+* OCR tools
+* Docker (optional)
+* Git & GitHub
+
+---
+
+## ▶️ How to Run Locally
+
+### Backend
+
+```bash
+cd backend
+python app.py
+```
+
+### Frontend
+
+```bash
+cd webapp
+npm install
+npm start
+```
+
+Set environment variables:
+
+```bash
+export GROQ_API_KEY=your_key
+export GROQ_MODEL=llama-3.1-8b-instant
+```
+
+---
+
