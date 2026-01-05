@@ -791,5 +791,5 @@ if __name__ == "__main__":
     logger.info("Starting Legal Document Intelligence Platform (RAG enabled)")
     logger.info(f"Tesseract: {tesseract_available} (cmd={pytesseract.pytesseract.tesseract_cmd if tesseract_available else None})")
     logger.info(f"Max workers: {Config.MAX_WORKERS}")
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8000)), debug=False)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=False)
 
